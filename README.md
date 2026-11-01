@@ -4,7 +4,7 @@
 
 An interactive, scroll-driven journey through the human family — from the Laetoli footprints to the person reading this sentence. Built with Three.js, hand-written shaders, procedural anatomy and a generative soundscape.
 
-![HOMO — an interactive origin story](docs/preview.jpg)
+**[Live demo → megabomb420.github.io/homo](https://megabomb420.github.io/homo/)**`n`n![HOMO — an interactive origin story](docs/preview.jpg)
 
 <img src="docs/preview-mobile.jpg" width="280" alt="HOMO on a narrow screen" />
 
