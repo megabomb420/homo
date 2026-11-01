@@ -1,0 +1,8 @@
+node_modules/
+dist/
+shots/
+.chrome-live/
+.chrome-profile/
+.chrome-profile-2/
+.DS_Store
+*.log

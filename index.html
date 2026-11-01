@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0b08" />
+    <title>HOMO — Four Million Years of Us</title>
+    <meta
+      name="description"
+      content="An interactive, scroll-driven journey through four million years of human evolution. Seven species, one unfinished story, built with Three.js."
+    />
+    <meta property="og:title" content="HOMO — Four Million Years of Us" />
+    <meta
+      property="og:description"
+      content="An interactive reconstruction of human evolution, sculpted in light. Scroll through deep time."
+    />
+    <meta property="og:type" content="website" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230b0b08'/%3E%3Cpath d='M18 14v36M46 14v36M18 32h28' stroke='%23e4d3b4' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%23d89a58'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body class="is-loading">
+    <div class="webgl-shell" aria-hidden="true">
+      <canvas id="scene"></canvas>
+      <div class="webgl-glow"></div>
+    </div>
+
+    <div id="ui" class="ui">
+      <header class="hud">
+        <a class="brand" href="#top" data-goto="0" aria-label="HOMO — return to the beginning">
+          <span class="brand-word">HOMO</span>
+          <span class="brand-sub">FIELD<br />RECONSTRUCTION</span>
+        </a>
+
+        <div class="hud-center" aria-hidden="true">
+          <span class="hud-line"></span>
+          <span>4,000,000 YEARS</span>
+          <span class="hud-dot"></span>
+          <span>SEVEN SPECIMENS</span>
+          <span class="hud-line"></span>
+        </div>
+
+        <div class="hud-actions">
+          <button id="sound-toggle" class="hud-button" type="button" aria-pressed="false">
+            <span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span id="sound-label">SOUND OFF</span>
+          </button>
+          <button id="info-toggle" class="hud-button" type="button" aria-haspopup="dialog">
+            <span class="button-mark" aria-hidden="true">?</span>
+            <span>FIELD NOTES</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="top-progress" aria-hidden="true"><span id="top-progress-fill"></span></div>
+
+      <main id="panels" class="panels" aria-live="polite"></main>
+
+      <nav id="rail" class="era-rail" aria-label="Chapters"></nav>
+
+      <div id="scroll-hint" class="scroll-hint" aria-hidden="true">
+        <span class="hint-label">SCROLL TO TRAVEL DEEP TIME</span>
+        <span class="hint-line"><i></i></span>
+      </div>
+
+      <footer class="timebar">
+        <div class="timebar-cell timebar-time">
+          <span class="micro-label">TIME DEPTH</span>
+          <strong id="time-value">3.6M YEARS AGO</strong>
+        </div>
+        <div class="timebar-track" aria-hidden="true">
+          <div class="timebar-fill" id="time-progress"></div>
+          <div class="timebar-ticks" id="time-ticks"></div>
+        </div>
+        <div class="timebar-cell timebar-chapter">
+          <span class="micro-label">CHAPTER</span>
+          <strong id="chapter-count">01 / 07</strong>
+        </div>
+      </footer>
+
+      <div class="frame" aria-hidden="true">
+        <span class="frame-corner tl"></span>
+        <span class="frame-corner tr"></span>
+        <span class="frame-corner bl"></span>
+        <span class="frame-corner br"></span>
+      </div>
+    </div>
+
+    <div class="grain" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="cursor-ring" aria-hidden="true"></div>
+    <div class="cursor-dot" aria-hidden="true"></div>
+
+    <div class="loader" id="loader">
+      <div class="loader-head">
+        <span>HOMO / ARCHIVE 001</span>
+        <span>51.5072° N — 0.1276° W</span>
+      </div>
+      <div class="loader-core">
+        <span class="loader-kicker">AN INTERACTIVE ORIGIN STORY</span>
+        <div class="loader-word" aria-label="HOMO">HOMO</div>
+        <p class="loader-sub">FOUR MILLION YEARS<br />IN SEVEN CHAPTERS</p>
+        <div class="loader-meter"><span id="loader-bar"></span></div>
+        <div class="loader-meta">
+          <span id="loader-status">ASSEMBLING SPECIMENS</span>
+          <span id="loader-pct">00</span>
+        </div>
+      </div>
+      <div class="loader-foot">
+        <span>THREE.JS / WEBGL / NO TEXTURES WERE HARMED</span>
+        <span>SCROLL WHEN READY</span>
+      </div>
+    </div>
+
+    <div class="info-modal" id="info-modal" role="dialog" aria-modal="true" aria-labelledby="info-title" aria-hidden="true">
+      <div class="info-backdrop" data-close-info></div>
+      <article class="info-card">
+        <button class="info-close" type="button" data-close-info aria-label="Close field notes">×</button>
+        <span class="micro-label">FIELD NOTES / 001</span>
+        <h2 id="info-title">A story told in<br /><em>bone and light.</em></h2>
+        <p>
+          <strong>HOMO</strong> is a poetic reconstruction, not a museum diagram. Seven species stand in for a family
+          tree that is really a braided river: branches that met, diverged, and sometimes disappeared. The figure in
+          the centre is one continuous sculpture, re-proportioned in real time as you move through deep time.
+        </p>
+        <div class="info-grid">
+          <div>
+            <h3>HOW TO MOVE</h3>
+            <p>Scroll, drag the scrollbar, or use the chapter rail. Move your pointer to shift the air around the scene.</p>
+          </div>
+          <div>
+            <h3>WHAT YOU HEAR</h3>
+            <p>Wind, a low drone and a fire synthesised in the browser. Sound is off until you ask for it.</p>
+          </div>
+          <div>
+            <h3>THE SCIENCE</h3>
+            <p>Dates and brain volumes are rounded and debated. “Earliest known” is doing a lot of work in this story.</p>
+          </div>
+          <div>
+            <h3>THE CRAFT</h3>
+            <p>Procedural bone anatomy, hand-written shaders, particles, bloom and a scroll timeline. Built with Three.js.</p>
+          </div>
+        </div>
+        <div class="info-foot">
+          <button type="button" class="text-button" data-close-info>RETURN TO DEEP TIME</button>
+          <a
+            id="repo-link"
+            class="text-button"
+            href="https://github.com/megabomb420/homo"
+            target="_blank"
+            rel="noreferrer"
+          >VIEW SOURCE ↗</a>
+        </div>
+      </article>
+    </div>
+
+    <div class="fallback" id="fallback" hidden>
+      <span class="micro-label">WEBGL UNAVAILABLE</span>
+      <h1>This story needs a little more light.</h1>
+      <p>
+        Your browser could not start the 3D reconstruction. Try a recent version of Chrome, Edge, Firefox or Safari
+        with hardware acceleration enabled. The written chapters remain available below.
+      </p>
+      <button type="button" id="fallback-close">READ THE CHAPTERS</button>
+    </div>
+
+    <noscript>
+      <div class="noscript">
+        HOMO is an interactive 3D story and needs JavaScript. The chapters describe the evolution of the human family
+        from <em>Australopithecus afarensis</em> to <em>Homo sapiens</em>.
+      </div>
+    </noscript>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
