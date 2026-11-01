@@ -678,6 +678,7 @@ function animate() {
   if (world && hominid) {
     blendTargets();
     world.update(stageFloat, time, delta, pointerSmooth);
+    hominid.pointer = pointerSmooth;
     hominid.update(time, delta, {
       figure: targetFigure,
       pose: targetPose,
