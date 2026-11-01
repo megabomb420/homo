@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { createGlowTexture, createStoneBumpTexture } from "./textures.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import skeletonUrl from "./assets/skeleton.glb?url";
+import skeletonUrl from "./assets/skeleton-rig.glb?url";
 
 const TAU = Math.PI * 2;
 
@@ -169,6 +169,9 @@ export class Hominid {
     this.targetColor = new THREE.Color(this.current.skin);
     this.currentFur = 0;
     this.stageIndex = 0;
+    this.prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
     this.build();
     this.skullReady = this.loadAnatomy().catch((error) => {
@@ -741,13 +744,24 @@ export class Hominid {
     this.anatomyGroup = new THREE.Group();
     this.anatomyGroup.name = "anatomical-skeleton";
     this.anatomyGroup.add(gltf.scene);
+    this.rigNodes = {};
     gltf.scene.traverse((child) => {
+      this.rigNodes[child.name] = child;
       if (!child.isMesh) return;
       child.material = this.anatomyMaterial;
       child.castShadow = true;
       child.receiveShadow = true;
       child.frustumCulled = false;
     });
+    this.rigRest = {};
+    for (const name of [
+      "RIG_chest", "RIG_neck", "RIG_head",
+      "RIG_shoulderL", "RIG_elbowL", "RIG_wristL",
+      "RIG_shoulderR", "RIG_elbowR", "RIG_wristR",
+    ]) {
+      const node = this.rigNodes[name];
+      if (node) this.rigRest[name] = node.rotation.clone();
+    }
     this.root.add(this.anatomyGroup);
     this.pelvis.visible = false;
     this.anatomyReady = true;
@@ -811,6 +825,78 @@ export class Hominid {
       this.furPelts.push(pelt);
     }
     this.furGroup.visible = false;
+  }
+
+  animateRig(time) {
+    if (!this.rigRest || this.prefersReducedMotion) return;
+    const r = this.rigRest;
+    const n = this.rigNodes;
+    const head = n.RIG_head;
+    const neck = n.RIG_neck;
+    const chest = n.RIG_chest;
+    if (!head || !neck || !chest) return;
+
+    const breath = Math.sin(time * 1.15);
+    const slow = Math.sin(time * 0.19);
+    const headYaw =
+      0.085 * Math.sin(time * 0.21 + 0.6) +
+      0.035 * Math.sin(time * 0.073 + 2.2);
+    // Brief glances to alternating sides.
+    const glanceA = 0.14 * Math.exp(-Math.pow(((time % 17) - 6.2) / 1.35, 2));
+    const glanceB = -0.11 * Math.exp(-Math.pow(((time % 29) - 19.5) / 1.5, 2));
+    const glance = glanceA + glanceB;
+    const headPitch =
+      0.022 * Math.sin(time * 0.37 + 1.2) +
+      0.01 * Math.sin(time * 0.17 - 0.4);
+    const headRoll = 0.012 * Math.sin(time * 0.29 + 0.4);
+
+    head.rotation.x = r.RIG_head.x + headPitch + breath * 0.002;
+    head.rotation.y = r.RIG_head.y + headYaw + glance;
+    head.rotation.z = r.RIG_head.z + headRoll;
+
+    neck.rotation.x = r.RIG_neck.x + headPitch * 0.34;
+    neck.rotation.y = r.RIG_neck.y + headYaw * 0.3 + glance * 0.2;
+    neck.rotation.z = r.RIG_neck.z + headRoll * 0.35;
+
+    chest.rotation.x = r.RIG_chest.x + breath * 0.0025;
+    chest.rotation.y = r.RIG_chest.y + headYaw * 0.07 + glance * 0.04;
+    chest.rotation.z = r.RIG_chest.z + slow * 0.0035;
+    chest.scale.y = 1 + breath * 0.0025;
+
+    const armL = time * 0.46;
+    const armR = time * 0.41 + 1.8;
+    const gestureL = 0.07 * Math.exp(-Math.pow(((time % 23) - 9.4) / 1.5, 2));
+    const gestureR = 0.055 * Math.exp(-Math.pow(((time % 27) - 18.2) / 1.6, 2));
+
+    if (n.RIG_shoulderL) {
+      n.RIG_shoulderL.rotation.x =
+        r.RIG_shoulderL.x + 0.03 + Math.sin(armL + 0.7) * 0.038 + gestureL;
+      n.RIG_shoulderL.rotation.z =
+        r.RIG_shoulderL.z - 0.016 + Math.sin(time * 0.37 + 1.4) * 0.016;
+    }
+    if (n.RIG_elbowL) {
+      n.RIG_elbowL.rotation.x =
+        r.RIG_elbowL.x + 0.05 + Math.sin(armL + 2.1) * 0.044 + gestureL * 1.6;
+    }
+    if (n.RIG_wristL) {
+      n.RIG_wristL.rotation.x = r.RIG_wristL.x + Math.sin(time * 0.51 + 1.1) * 0.03;
+      n.RIG_wristL.rotation.z = r.RIG_wristL.z + Math.sin(time * 0.43) * 0.02;
+    }
+
+    if (n.RIG_shoulderR) {
+      n.RIG_shoulderR.rotation.x =
+        r.RIG_shoulderR.x + 0.024 + Math.sin(armR + 0.4) * 0.034 + gestureR;
+      n.RIG_shoulderR.rotation.z =
+        r.RIG_shoulderR.z + 0.014 - Math.sin(time * 0.35 + 2.2) * 0.015;
+    }
+    if (n.RIG_elbowR) {
+      n.RIG_elbowR.rotation.x =
+        r.RIG_elbowR.x + 0.044 + Math.sin(armR + 1.7) * 0.04 + gestureR * 1.5;
+    }
+    if (n.RIG_wristR) {
+      n.RIG_wristR.rotation.x = r.RIG_wristR.x + Math.sin(time * 0.47 + 2.3) * 0.026;
+      n.RIG_wristR.rotation.z = r.RIG_wristR.z + Math.sin(time * 0.39 + 0.6) * 0.016;
+    }
   }
 
   update(time, delta, targets, stageIndex, snap = false) {
@@ -1053,13 +1139,14 @@ export class Hominid {
     if (this.anatomyReady && this.anatomyGroup) {
       const scale = h / this.anatomyBaseHeight;
       this.anatomyGroup.scale.setScalar(scale);
-      this.anatomyGroup.position.set(slow * h * 0.004, 0, 0);
+      this.anatomyGroup.position.set(slow * h * 0.006, 0, 0);
       this.anatomyGroup.rotation.set(
         cur.spineX * 0.34 + Math.sin(time * 0.31) * 0.003,
         Math.sin(time * 0.19) * 0.012,
-        slow * 0.009,
+        slow * 0.012,
       );
       this.anatomyMaterial.color.copy(this.currentColor);
+      this.animateRig(time);
     }
 
     this.root.updateMatrixWorld(true);

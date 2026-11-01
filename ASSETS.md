@@ -5,7 +5,7 @@ The following assets keep their own licenses.
 
 ## Anatomical skeleton
 
-`src/assets/skeleton.glb` is a decimated derivative of the **Z-Anatomy** model set:
+`src/assets/skeleton-rig.glb` is a segmented, decimated derivative of the **Z-Anatomy** model set:
 
 - **Z-Anatomy — The libre 3D atlas of anatomy**, by Gauthier Kervyn, Marcin Zielinski and contributors.  
   https://www.z-anatomy.com/  
@@ -14,7 +14,7 @@ The following assets keep their own licenses.
   https://dbarchive.biosciencedbc.jp/en/bodyparts3d/download.html  
   License: [CC BY-SA 2.1 Japan](https://creativecommons.org/licenses/by-sa/2.1/jp/)
 
-The skeleton was isolated from the Z-Anatomy Blender template, merged into a single mesh, reduced from approximately 499,000 to 130,000 triangles, and exported as `skeleton.glb` for this project. That derivative is distributed under **CC BY-SA 4.0**. Attribution is also shown in the site's Field Notes panel and in the repository README.
+The skeleton was isolated from the Z-Anatomy Blender template, split into head, neck, chest, arm and leg meshes around joint pivots, reduced from approximately 499,000 to 127,000 triangles, and exported as `skeleton-rig.glb` for this project. That derivative is distributed under **CC BY-SA 4.0**. Attribution is also shown in the site's Field Notes panel and in the repository README.
 
 ## Sky
 

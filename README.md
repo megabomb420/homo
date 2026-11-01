@@ -39,7 +39,8 @@ The landscape changes with it: a Pliocene dusk, a Pleistocene campfire, an ice-a
 
 ## Craft notes
 
-- **Anatomical specimen**: a full human skeleton from BodyParts3D / Z-Anatomy, isolated and merged in Blender, reduced from ~499k to ~130k triangles, and driven as a single sculptural figure through seven scales and postures.
+- **Anatomical specimen**: a full human skeleton from BodyParts3D / Z-Anatomy, split into a joint hierarchy in Blender, reduced from ~499k to ~127k triangles, and driven through seven scales and postures.
+- **Idle performance**: head glances with a counter-rotating neck, breathing chest, shoulder sway, elbow drift and small wrist movements — never a frozen statue.
 - **Cinematic camera**: scroll-driven dolly moves, shallow depth of field focused on the specimen, and a slower pull-back for the final chapter.
 - **Film pipeline**: AgX tone mapping, bloom, depth of field, chromatic aberration, SMAA, vignette and animated grain via `postprocessing`.
 - **Photographic atmosphere**: a CC0 equirectangular sky panorama feeds a custom cloud/detail shader; PBR normal and roughness maps add scale to the ground.
