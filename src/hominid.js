@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { createGlowTexture, createStoneBumpTexture } from "./textures.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import skullUrl from "./assets/skull.glb?url";
+import skeletonUrl from "./assets/skeleton.glb?url";
 
 const TAU = Math.PI * 2;
 
@@ -171,8 +171,8 @@ export class Hominid {
     this.stageIndex = 0;
 
     this.build();
-    this.skullReady = this.loadSkull().catch((error) => {
-      console.error("HOMO skull load failed", error);
+    this.skullReady = this.loadAnatomy().catch((error) => {
+      console.error("HOMO anatomy load failed", error);
       this.skullError = error;
     });
   }
@@ -728,27 +728,32 @@ export class Hominid {
     this.head.add(this.faceMark);
   }
 
-  async loadSkull() {
+  async loadAnatomy() {
     const loader = new GLTFLoader();
-    const gltf = await loader.loadAsync(skullUrl);
-    const model = gltf.scene;
-    model.traverse((child) => {
+    const gltf = await loader.loadAsync(skeletonUrl);
+    this.anatomyMaterial = new THREE.MeshStandardMaterial({
+      color: "#c9b18b",
+      roughness: 0.62,
+      metalness: 0.0,
+      emissive: "#1a1109",
+      emissiveIntensity: 0.18,
+    });
+    this.anatomyGroup = new THREE.Group();
+    this.anatomyGroup.name = "anatomical-skeleton";
+    this.anatomyGroup.add(gltf.scene);
+    gltf.scene.traverse((child) => {
       if (!child.isMesh) return;
-      child.material = this.skullMaterial;
+      child.material = this.anatomyMaterial;
       child.castShadow = true;
-      child.receiveShadow = false;
+      child.receiveShadow = true;
       child.frustumCulled = false;
     });
-    this.skullGroup = new THREE.Group();
-    this.skullGroup.name = "specimen-skull";
-    this.skullGroup.add(model);
-    this.head.add(this.skullGroup);
-    // The primitive skull is now only a fallback for slow/failed loads.
-    for (const child of this.head.children) {
-      if (child !== this.skullGroup) child.visible = false;
-    }
-    this.skullModel = model;
+    this.root.add(this.anatomyGroup);
+    this.pelvis.visible = false;
+    this.anatomyReady = true;
+    this.anatomyBaseHeight = 1.696;
   }
+
   buildFurMantle() {
     this.furGroup = new THREE.Group();
     this.torsoPivot.add(this.furGroup);
@@ -1044,6 +1049,18 @@ export class Hominid {
     this.contactShadow.scale.set(h * 0.42, h * 0.26, 1);
     this.contactShadow.position.y = 0.007;
     this.contactShadow.material.opacity = 0.28;
+
+    if (this.anatomyReady && this.anatomyGroup) {
+      const scale = h / this.anatomyBaseHeight;
+      this.anatomyGroup.scale.setScalar(scale);
+      this.anatomyGroup.position.set(slow * h * 0.004, 0, 0);
+      this.anatomyGroup.rotation.set(
+        cur.spineX * 0.34 + Math.sin(time * 0.31) * 0.003,
+        Math.sin(time * 0.19) * 0.012,
+        slow * 0.009,
+      );
+      this.anatomyMaterial.color.copy(this.currentColor);
+    }
 
     this.root.updateMatrixWorld(true);
   }

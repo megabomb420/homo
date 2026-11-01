@@ -1195,6 +1195,24 @@ body.is-loaded .loader {
   color: var(--bone-faint);
 }
 
+.info-credit {
+  margin: 0 0 22px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(201, 181, 143, 0.14);
+  font-family: var(--mono);
+  font-size: 6.5px;
+  line-height: 1.8;
+  letter-spacing: 0.05em;
+  color: var(--bone-faint);
+}
+
+.info-credit a {
+  color: var(--bone-dim);
+  text-decoration: underline;
+  text-decoration-color: rgba(201, 181, 143, 0.3);
+  text-underline-offset: 3px;
+}
+
 .info-foot {
   display: flex;
   flex-wrap: wrap;

@@ -28,8 +28,8 @@ export const STAGES = [
     ],
     accent: "#d89a58",
     camera: {
-      position: [1.1, 0.95, 2.0],
-      target: [-0.2, 0.83, 0],
+      position: [1.45, 1.05, 2.75],
+      target: [-0.2, 0.7, 0],
       fov: 32,
     },
     env: {
@@ -230,8 +230,8 @@ export const STAGES = [
     ],
     accent: "#e39a4b",
     camera: {
-      position: [1.4, 1.15, 2.7],
-      target: [-0.15, 1.05, 0],
+      position: [1.75, 1.25, 3.5],
+      target: [-0.15, 0.95, 0],
       fov: 33,
     },
     env: {
@@ -334,8 +334,8 @@ export const STAGES = [
     ],
     accent: "#9db7c4",
     camera: {
-      position: [-1.7, 1.3, 2.6],
-      target: [0.2, 1.05, 0],
+      position: [-1.9, 1.35, 3.3],
+      target: [0.2, 0.95, 0],
       fov: 32,
     },
     env: {
@@ -539,8 +539,8 @@ export const STAGES = [
     ],
     accent: "#d7a353",
     camera: {
-      position: [-1.55, 1.45, 2.5],
-      target: [0.2, 1.15, 0],
+      position: [-1.75, 1.45, 3.2],
+      target: [0.2, 1.0, 0],
       fov: 32,
     },
     env: {

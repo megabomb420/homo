@@ -1,7 +1,7 @@
 {
   "name": "homo",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "description": "An interactive, scroll-driven Three.js journey through four million years of human evolution.",
   "scripts": {

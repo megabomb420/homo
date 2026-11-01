@@ -2,7 +2,7 @@
 
 ### Four million years, seven chapters, one skeletal reconstruction.
 
-An interactive, scroll-driven journey through the human family — from the Laetoli footprints to the person reading this sentence. Built with Three.js, hand-written shaders, a detailed fossil skull and a cinematic post-processing pipeline.
+An interactive, scroll-driven journey through the human family — from the Laetoli footprints to the person reading this sentence. Built with Three.js, a full anatomical skeleton, hand-written shaders and a cinematic post-processing pipeline.
 
 **[Live demo → megabomb420.github.io/homo](https://megabomb420.github.io/homo/)**
 
@@ -12,7 +12,7 @@ An interactive, scroll-driven journey through the human family — from the Laet
 
 ## The idea
 
-Most evolution timelines are straight lines. Ours is not. **HOMO** treats the fossil record as a braided river: seven species, each one a presence rather than a diagram. The central figure is a skeletal reconstruction, re-proportioned continuously as you scroll. Limbs lengthen, the ribcage changes volume, the skull remodels, the posture lifts upright.
+Most evolution timelines are straight lines. Ours is not. **HOMO** treats the fossil record as a braided river: seven species, each one a presence rather than a diagram. The central figure is one anatomical specimen, rescaled, leaned and relit as you scroll. The body grows taller, the posture shifts, and the silhouette moves from a low, heavy stance to an upright one.
 
 The landscape changes with it: a Pliocene dusk, a Pleistocene campfire, an ice-age whiteout, a painted cave, a dawn with the ancestors still standing in the fog.
 
@@ -39,7 +39,7 @@ The landscape changes with it: a Pliocene dusk, a Pleistocene campfire, an ice-a
 
 ## Craft notes
 
-- **Hybrid specimen**: a 34k-triangle CC0 human skull, decimated and fitted in Blender to a procedural skeleton whose proportions and posture are driven by the scroll timeline.
+- **Anatomical specimen**: a full human skeleton from BodyParts3D / Z-Anatomy, isolated and merged in Blender, reduced from ~499k to ~130k triangles, and driven as a single sculptural figure through seven scales and postures.
 - **Cinematic camera**: scroll-driven dolly moves, shallow depth of field focused on the specimen, and a slower pull-back for the final chapter.
 - **Film pipeline**: AgX tone mapping, bloom, depth of field, chromatic aberration, SMAA, vignette and animated grain via `postprocessing`.
 - **Photographic atmosphere**: a CC0 equirectangular sky panorama feeds a custom cloud/detail shader; PBR normal and roughness maps add scale to the ground.
@@ -63,15 +63,15 @@ Then open the local URL printed by Vite.
 npm run build
 ```
 
-The result is a self-contained `dist/index.html` — fonts, shaders, the skull model, sky and PBR maps all inlined. It can be opened directly from disk or dropped on any static host.
+The result is a self-contained `dist/index.html` — fonts, shaders, the skeleton model, sky and PBR maps all inlined. It can be opened directly from disk or dropped on any static host.
 
 ## Science note
 
-This is a poetic reconstruction, not a peer-reviewed diagram. Dates and cranial capacities are rounded and debated. "Earliest known" is doing a lot of work in the copy. The detailed skull is a modern-human reference, re-proportioned for each species; it is an image of a hypothesis, not a forensic portrait.
+This is a poetic reconstruction, not a peer-reviewed diagram. Dates and cranial capacities are rounded and debated. "Earliest known" is doing a lot of work in the copy. The skeleton is an anatomical modern-human reference, scaled and leaned for each species; it is an image of a hypothesis, not a forensic portrait.
 
 ## Assets & credits
 
-- **Skull**: “Skull” from the Khronos glTF Sample Assets, CC0, by Vladimir Petkovic. Decimated and re-materialled for this project.
+- **Skeleton**: [Z-Anatomy](https://www.z-anatomy.com/), derived from [BodyParts3D](https://dbarchive.biosciencedbc.jp/en/bodyparts3d/download.html), CC BY-SA 4.0 / CC BY-SA 2.1 Japan. Decimated derivative released under CC BY-SA 4.0. See [ASSETS.md](ASSETS.md).
 - **Sky**: “Kloppenheim 06 Pure Sky” from Poly Haven, CC0.
 - **Ground maps**: “Red Mud Stones” normal/roughness maps from Poly Haven, CC0.
 - **Post-processing**: [postprocessing](https://github.com/pmndrs/postprocessing) by pmndrs.
@@ -79,4 +79,4 @@ This is a poetic reconstruction, not a peer-reviewed diagram. Dates and cranial 
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Code: MIT — see [LICENSE](LICENSE). Assets: see [ASSETS.md](ASSETS.md); the skeleton derivative is CC BY-SA 4.0.
