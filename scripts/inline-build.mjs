@@ -38,6 +38,26 @@ html = html.replace(
 
 html = html.replace(/<link[^>]+rel="modulepreload"[^>]*>/g, "");
 
+// Inline binary assets referenced from the bundled JavaScript (the skull GLB).
+const binaryDir = path.join(dist, "assets");
+const mimeTypes = {
+  ".glb": "model/gltf-binary",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+};
+for (const file of fs.readdirSync(binaryDir)) {
+  const ext = path.extname(file).toLowerCase();
+  const mime = mimeTypes[ext];
+  if (!mime) continue;
+  const data = fs.readFileSync(path.join(binaryDir, file)).toString("base64");
+  const dataUri = `data:${mime};base64,${data}`;
+  for (const token of [file, `./assets/${file}`, `assets/${file}`, `/assets/${file}`]) {
+    html = html.split(token).join(dataUri);
+  }
+}
+
 fs.writeFileSync(indexPath, html);
 const size = fs.statSync(indexPath).size;
 console.log(`Inlined assets into dist/index.html (${(size / 1024 / 1024).toFixed(2)} MB)`);

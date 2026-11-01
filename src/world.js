@@ -1,5 +1,8 @@
 import * as THREE from "three";
 import { STAGES } from "./data.js";
+import skyUrl from "./assets/sky-sunset.jpg?url";
+import groundNorUrl from "./assets/ground-nor.jpg?url";
+import groundRoughUrl from "./assets/ground-rough.jpg?url";
 import {
   clamp,
   fbm,
@@ -11,6 +14,7 @@ import {
 import {
   createFootprintTexture,
   createGlowTexture,
+  createGroundNormalTexture,
   createHandprintTexture,
   createPointTexture,
   createSmokeTexture,
@@ -187,6 +191,7 @@ export class World {
     this.footprintTexture = createFootprintTexture();
     this.stoneBump = createStoneBumpTexture(256);
     this.stoneBump.repeat.set(5, 5);
+    this.groundNormal = createGroundNormalTexture(512);
 
     this.buildLights();
     this.buildSky();
@@ -239,6 +244,10 @@ export class World {
       uHorizon: { value: new THREE.Color("#d8945c") },
       uBottom: { value: new THREE.Color("#3a2b20") },
       uTime: { value: 0 },
+      uSkyTexture: { value: null },
+      uHasSky: { value: 0 },
+      uSkyStrength: { value: 0.66 },
+      uSkyRotation: { value: 0.08 },
     };
     const material = new THREE.ShaderMaterial({
       uniforms: this.skyUniforms,
@@ -258,7 +267,15 @@ export class World {
         uniform vec3 uHorizon;
         uniform vec3 uBottom;
         uniform float uTime;
+        uniform sampler2D uSkyTexture;
+        uniform float uHasSky;
+        uniform float uSkyStrength;
+        uniform float uSkyRotation;
         varying vec3 vWorldPosition;
+
+        vec3 srgbToLinear(vec3 c) {
+          return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c));
+        }
 
         float hash(vec2 p) {
           p = fract(p * vec2(123.34, 456.21));
@@ -290,13 +307,32 @@ export class World {
           float band = 1.0 - smoothstep(0.04, 0.42, abs(elevation - 0.1));
           color += cloud * band * 0.035;
 
+          if (uHasSky > 0.5) {
+            vec2 skyUv = vec2(
+              atan(dir.z, dir.x) / 6.28318530718 + 0.5 + uSkyRotation,
+              asin(clamp(dir.y, -1.0, 1.0)) / 3.14159265359 + 0.5
+            );
+            vec3 photo = srgbToLinear(texture2D(uSkyTexture, skyUv).rgb);
+            float detail = dot(photo, vec3(0.299, 0.587, 0.114));
+            detail = smoothstep(0.02, 0.92, detail);
+            vec3 detailed = color * (0.62 + detail * 0.95) + photo * 0.06;
+            color = mix(color, detailed, uSkyStrength);
+          }
+
           float grain = hash(gl_FragCoord.xy) - 0.5;
           color += grain / 255.0;
           gl_FragColor = vec4(color, 1.0);
         }
       `,
     });
-    const sky = new THREE.Mesh(new THREE.SphereGeometry(90, 48, 28), material);
+    this.skyTexture = new THREE.TextureLoader().load(skyUrl, (texture) => {
+      texture.colorSpace = THREE.NoColorSpace;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.anisotropy = 4;
+      this.skyUniforms.uSkyTexture.value = texture;
+      this.skyUniforms.uHasSky.value = 1;
+    });    const sky = new THREE.Mesh(new THREE.SphereGeometry(90, 48, 28), material);
     sky.renderOrder = -20;
     this.scene.add(sky);
     this.sky = sky;
@@ -323,20 +359,57 @@ export class World {
     geometry.computeVertexNormals();
 
     this.terrainMaterial = new THREE.MeshStandardMaterial({
-      color: "#6d573a",
-      roughness: 0.98,
+      color: "#8b765d",
+      roughness: 0.94,
       metalness: 0,
       vertexColors: true,
-      bumpMap: this.stoneBump,
-      bumpScale: 0.006,
+      roughnessMap: null,
+      normalMap: null,
+      normalScale: new THREE.Vector2(1.1, 1.1),
     });
     this.terrain = new THREE.Mesh(geometry, this.terrainMaterial);
     this.terrain.receiveShadow = true;
     this.scene.add(this.terrain);
 
+    const textureLoader = new THREE.TextureLoader();
+    const makeTile = (url, colorSpace = THREE.NoColorSpace) => {
+      const texture = textureLoader.load(url);
+      texture.colorSpace = colorSpace;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(10, 10);
+      texture.anisotropy = 4;
+      return texture;
+    };
+    const normalMap = makeTile(groundNorUrl);
+    const roughnessMap = makeTile(groundRoughUrl);
+    normalMap.onUpdate = () => { this.terrainMaterial.normalMap = normalMap; this.terrainMaterial.needsUpdate = true; };
+    roughnessMap.onUpdate = () => { this.terrainMaterial.roughnessMap = roughnessMap; this.terrainMaterial.needsUpdate = true; };
+    this.terrainMaterial.normalMap = normalMap;
+    this.terrainMaterial.roughnessMap = roughnessMap;
+    this.terrainMaterial.needsUpdate = true;
+
+    this.snowMaterial = new THREE.MeshStandardMaterial({
+      color: "#b9c9ce",
+      roughness: 0.9,
+      metalness: 0,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      normalMap: this.groundNormal,
+      normalScale: new THREE.Vector2(1.6, 1.6),
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+    });
+    this.snowOverlay = new THREE.Mesh(geometry.clone(), this.snowMaterial);
+    this.snowOverlay.position.y = 0.008;
+    this.snowOverlay.receiveShadow = true;
+    this.snowOverlay.visible = false;
+    this.scene.add(this.snowOverlay);
+
     // Scattered stones.
     const random = mulberry32(11939);
-    const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+    const rockGeo = makeRockGeometry(1, 119, 0.22);
     this.rockMaterial = new THREE.MeshStandardMaterial({
       color: "#5a4b38",
       roughness: 0.92,
@@ -354,10 +427,10 @@ export class World {
     const euler = new THREE.Euler();
     for (let i = 0; i < count; i += 1) {
       const angle = random() * Math.PI * 2;
-      const radius = 2.4 + Math.pow(random(), 0.7) * 16;
+      const radius = 2.8 + Math.pow(random(), 0.7) * 16;
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
-      const size = 0.06 + Math.pow(random(), 2.2) * 0.6;
+      const size = 0.05 + Math.pow(random(), 2.2) * 0.36;
       pos.set(x, terrainHeight(x, z) + size * 0.24, z);
       euler.set(random() * 0.8, random() * Math.PI * 2, random() * 0.8);
       quat.setFromEuler(euler);
@@ -422,7 +495,7 @@ export class World {
       );
     };
     const bladeGeo = makeBladeGeometry();
-    const grassCount = 1200;
+    const grassCount = 2200;
     const grass = new THREE.InstancedMesh(bladeGeo, this.grassMaterial, grassCount);
     const grassColor = new THREE.Color();
     for (let i = 0; i < grassCount; i += 1) {
@@ -430,7 +503,7 @@ export class World {
       const radius = 1.7 + Math.pow(random(), 0.6) * 13;
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
-      const height = 0.22 + random() * 0.62;
+      const height = 0.28 + random() * 0.72;
       pos.set(x, terrainHeight(x, z), z);
       euler.set(0, random() * Math.PI * 2, 0);
       quat.setFromEuler(euler);
@@ -1256,7 +1329,7 @@ export class World {
     this.rim.intensity = num.rimIntensity;
     this.rim.position.set(-this.key.position.x * 0.9, 3.4, -Math.abs(this.key.position.z) - 4);
 
-    this.terrainMaterial.color.copy(col.ground);
+    this.terrainMaterial.color.copy(col.ground).lerp(new THREE.Color("#b4a072"), 0.32);
     this.rockMaterial.color.copy(col.rock);
     this.grassMaterial.color.copy(col.grass);
     this.shrubMaterial.color.copy(col.grass).multiplyScalar(0.55);
@@ -1298,13 +1371,16 @@ export class World {
     this.snowUniforms.uTime.value = time;
     this.snowUniforms.uOpacity.value = num.snow;
     this.snow.visible = num.snow > 0.01;
+    this.snowOverlay.visible = num.snow > 0.02;
+    this.snowOverlay.material.opacity = Math.min(1, num.snow * 1.3);
+    this.snowOverlay.material.color.copy(col.fog).lerp(new THREE.Color("#eef7fa"), 0.62);
 
     this.starUniforms.uTime.value = time;
     this.starUniforms.uOpacity.value = num.stars;
     this.stars.visible = num.stars > 0.01;
 
     this.key.shadow.intensity = 0.82;
-    this.renderer.toneMappingExposure = num.exposure;
+    this.renderer.toneMappingExposure = num.exposure * 1.2;
 
     // Fire follows the campfire.
     const fire = num.fire;

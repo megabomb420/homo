@@ -231,6 +231,95 @@ export function createFootprintTexture(size = 256) {
   return texture;
 }
 
+export function createGroundNormalTexture(size = 512) {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const image = ctx.createImageData(size, size);
+  const height = new Float32Array(size * size);
+  let seed = 91357;
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const hash = (x, y) => {
+    let h = x * 374761393 + y * 668265263;
+    h = (h ^ (h >>> 13)) * 1274126177;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  };
+  const noise = (x, y) => {
+    const xi = Math.floor(x);
+    const yi = Math.floor(y);
+    const xf = x - xi;
+    const yf = y - yi;
+    const u = xf * xf * (3 - 2 * xf);
+    const v = yf * yf * (3 - 2 * yf);
+    return (
+      (hash(xi, yi) * (1 - u) + hash(xi + 1, yi) * u) * (1 - v) +
+      (hash(xi, yi + 1) * (1 - u) + hash(xi + 1, yi + 1) * u) * v
+    );
+  };
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      let h = 0;
+      let amp = 0.55;
+      let freq = 5;
+      for (let o = 0; o < 5; o += 1) {
+        h += noise((x / size) * freq + 3, (y / size) * freq - 2) * amp;
+        amp *= 0.5;
+        freq *= 2.1;
+      }
+      height[y * size + x] = h;
+    }
+  }
+
+  // Scatter a few embedded pebbles.
+  for (let i = 0; i < 260; i += 1) {
+    const cx = Math.floor(rand() * size);
+    const cy = Math.floor(rand() * size);
+    const r = 1 + rand() * 4;
+    for (let y = -r; y <= r; y += 1) {
+      for (let x = -r; x <= r; x += 1) {
+        const d = Math.hypot(x, y) / r;
+        if (d > 1) continue;
+        const px = (cx + x + size) % size;
+        const py = (cy + y + size) % size;
+        height[py * size + px] += Math.cos(d * Math.PI * 0.5) * 0.09;
+      }
+    }
+  }
+
+  const strength = 3.2;
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const left = height[y * size + ((x - 1 + size) % size)];
+      const right = height[y * size + ((x + 1) % size)];
+      const up = height[((y - 1 + size) % size) * size + x];
+      const down = height[((y + 1) % size) * size + x];
+      let nx = (left - right) * strength;
+      let ny = (up - down) * strength;
+      let nz = 1;
+      const inv = 1 / Math.hypot(nx, ny, nz);
+      nx *= inv;
+      ny *= inv;
+      nz *= inv;
+      const i = (y * size + x) * 4;
+      image.data[i] = (nx * 0.5 + 0.5) * 255;
+      image.data[i + 1] = (ny * 0.5 + 0.5) * 255;
+      image.data[i + 2] = (nz * 0.5 + 0.5) * 255;
+      image.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(9, 9);
+  texture.anisotropy = 4;
+  return texture;
+}
 export function createStoneBumpTexture(size = 256) {
   const canvas = makeCanvas(size);
   const ctx = canvas.getContext("2d");

@@ -2,10 +2,19 @@ import "./style.css";
 
 import * as THREE from "three";
 import Lenis from "lenis";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import {
+  BloomEffect,
+  BlendFunction,
+  ChromaticAberrationEffect,
+  DepthOfFieldEffect,
+  EffectComposer,
+  EffectPass,
+  NoiseEffect,
+  RenderPass,
+  SMAAEffect,
+  SMAAPreset,
+  VignetteEffect,
+} from "postprocessing";
 
 import { STAGES } from "./data.js";
 import { Hominid } from "./hominid.js";
@@ -66,7 +75,7 @@ let renderer;
 let scene;
 let camera;
 let composer;
-let bloomPass;
+let postFX = null;
 let world;
 let hominid;
 let lenis = null;
@@ -362,8 +371,8 @@ function setupThree() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, isSmallScreen ? 1.5 : 1.8));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMapping = THREE.AgXToneMapping;
+  renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.info.autoReset = true;
@@ -390,20 +399,66 @@ function setupThree() {
   hominid = new Hominid(scene);
   soundscape = new Soundscape();
 
-  const renderPass = new RenderPass(scene, camera);
-  composer = new EffectComposer(renderer);
-  composer.setPixelRatio(renderer.getPixelRatio());
-  composer.setSize(window.innerWidth, window.innerHeight);
-  composer.addPass(renderPass);
+  composer = new EffectComposer(renderer, {
+    frameBufferType: THREE.HalfFloatType,
+  });
+  const drawSize = renderer.getDrawingBufferSize(new THREE.Vector2());
+  composer.setSize(drawSize.x, drawSize.y);
+  composer.addPass(new RenderPass(scene, camera));
 
-  bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight),
-    isSmallScreen ? 0.26 : 0.34,
-    0.7,
-    0.82,
+  // N8AO is optional; the rest of the grade must survive even if it is unavailable.
+  let aoPass = null;
+
+  const dof = isSmallScreen
+    ? null
+    : new DepthOfFieldEffect(camera, {
+        focusDistance: 4.5,
+        focusRange: 2.0,
+        bokehScale: 1.9,
+        resolutionScale: 0.75,
+      });
+  if (dof) dof.target = null;
+
+  const bloom = new BloomEffect({
+    luminanceThreshold: 0.82,
+    luminanceSmoothing: 0.18,
+    intensity: isSmallScreen ? 0.32 : 0.5,
+    mipmapBlur: true,
+    radius: 0.68,
+  });
+
+  const aberration = new ChromaticAberrationEffect({
+    offset: new THREE.Vector2(0.00055, 0.0008),
+    radialModulation: true,
+    modulationOffset: 0.35,
+  });
+
+  const vignette = new VignetteEffect({
+    offset: 0.36,
+    darkness: 0.46,
+  });
+
+  const grain = new NoiseEffect({
+    blendFunction: BlendFunction.OVERLAY,
+    premultiply: true,
+  });
+  grain.blendMode.opacity.value = 0.1;
+
+  const lens = new EffectPass(
+    camera,
+    ...(dof ? [dof, bloom, aberration] : [bloom, aberration]),
   );
-  composer.addPass(bloomPass);
-  composer.addPass(new OutputPass());
+  const finish = new EffectPass(
+    camera,
+    new SMAAEffect({ preset: SMAAPreset.HIGH }),
+    vignette,
+    grain,
+  );
+  composer.addPass(lens);
+  composer.addPass(finish);
+
+  postFX = { aoPass, dof, bloom, aberration, vignette, grain, lens, finish };
+  window.__HOMO__ = { scene, camera, renderer, composer, world, hominid, postFX };
 
   timer.connect(document);
   measureScroll();
@@ -424,7 +479,10 @@ function setupThree() {
 
   // Fonts are the only hard dependency. Shader compilation can finish in the
   // background: waiting for it on software renderers can take far too long.
-  document.fonts.ready.then(markReady).catch(markReady);
+  Promise.allSettled([
+    document.fonts.ready,
+    hominid?.skullReady ?? Promise.resolve(),
+  ]).then(markReady);
   window.setTimeout(markReady, 2200);
 }
 
@@ -441,10 +499,10 @@ function onResize() {
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
   if (composer) {
-    composer.setPixelRatio(renderer.getPixelRatio());
-    composer.setSize(width, height);
+    const drawSize = renderer.getDrawingBufferSize(new THREE.Vector2());
+    composer.setSize(drawSize.x, drawSize.y);
+    if (postFX?.aoPass) postFX.aoPass.setSize(drawSize.x, drawSize.y);
   }
-  if (bloomPass) bloomPass.setSize(width, height);
   measureScroll();
 }
 
@@ -607,8 +665,8 @@ function animate() {
   const time = timer.getElapsed();
 
   if (introStart >= 0) {
-    const target = clamp((time - introStart) / 3.6, 0, 1);
-    introT = reducedMotion ? 1 : THREE.MathUtils.damp(introT, target, 2.4, delta);
+    const target = clamp((time - introStart) / 2.2, 0, 1);
+    introT = reducedMotion ? 1 : THREE.MathUtils.damp(introT, target, 3.4, delta);
   }
 
   pointerSmooth.x = THREE.MathUtils.damp(pointerSmooth.x, pointer.x, 3.2, delta);
@@ -625,6 +683,7 @@ function animate() {
       pose: targetPose,
       props: targetProps,
     }, clamp(Math.round(stageFloat), 0, LAST_STAGE));
+
 
     if (!isLoading) {
       const angle = Math.atan2(
@@ -644,6 +703,16 @@ function animate() {
   if (isLoading) updateLoader(delta);
 
   updateCamera(time, delta, stageFloat, false);
+
+  if (postFX?.dof && hominid) {
+    const focusPoint = new THREE.Vector3(
+      hominid.root.position.x,
+      hominid.current.height * 0.82,
+      hominid.root.position.z,
+    );
+    postFX.dof.cocMaterial.focusDistance = camera.position.distanceTo(focusPoint);
+    postFX.dof.cocMaterial.focusRange = stageFloat > 5.35 ? 4.2 : 1.9;
+  }
 
   if (composer) composer.render();
   else if (renderer && scene && camera) renderer.render(scene, camera);

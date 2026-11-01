@@ -2,7 +2,7 @@
 
 ### Four million years, seven chapters, one skeletal reconstruction.
 
-An interactive, scroll-driven journey through the human family — from the Laetoli footprints to the person reading this sentence. Built with Three.js, hand-written shaders, procedural anatomy and a generative soundscape.
+An interactive, scroll-driven journey through the human family — from the Laetoli footprints to the person reading this sentence. Built with Three.js, hand-written shaders, a detailed fossil skull and a cinematic post-processing pipeline.
 
 **[Live demo → megabomb420.github.io/homo](https://megabomb420.github.io/homo/)**
 
@@ -12,7 +12,7 @@ An interactive, scroll-driven journey through the human family — from the Laet
 
 ## The idea
 
-Most evolution timelines are straight lines. Ours is not. **HOMO** treats the fossil record as a braided river: seven species, each one a full-bodied presence rather than a diagram. The central figure is a single skeletal reconstruction, re-proportioned continuously as you scroll. Limbs lengthen, the ribcage changes volume, the skull remodels, the posture lifts upright.
+Most evolution timelines are straight lines. Ours is not. **HOMO** treats the fossil record as a braided river: seven species, each one a presence rather than a diagram. The central figure is a skeletal reconstruction, re-proportioned continuously as you scroll. Limbs lengthen, the ribcage changes volume, the skull remodels, the posture lifts upright.
 
 The landscape changes with it: a Pliocene dusk, a Pleistocene campfire, an ice-age whiteout, a painted cave, a dawn with the ancestors still standing in the fog.
 
@@ -39,12 +39,13 @@ The landscape changes with it: a Pliocene dusk, a Pleistocene campfire, an ice-a
 
 ## Craft notes
 
-- Procedural skeleton: cranium, jaw, teeth, orbits, vertebrae, ribs, clavicles, pelvis, long bones, hands and feet — all generated from primitives, no model files.
-- One continuous scroll timeline drives camera, species proportions, posture, palette, fog, lighting, fire, snow, stars and four million years of geology.
-- Custom GLSL for the sky, dust, snow, stars and flame.
-- GPU-instanced grass with wind, instanced stones, billboard smoke, a flickering fire light and bloom.
-- Canvas-generated textures for bone pores, footprints and negative/positive cave handprints.
-- A small synthesised soundscape using Web Audio; no audio files.
+- **Hybrid specimen**: a 34k-triangle CC0 human skull, decimated and fitted in Blender to a procedural skeleton whose proportions and posture are driven by the scroll timeline.
+- **Cinematic camera**: scroll-driven dolly moves, shallow depth of field focused on the specimen, and a slower pull-back for the final chapter.
+- **Film pipeline**: AgX tone mapping, bloom, depth of field, chromatic aberration, SMAA, vignette and animated grain via `postprocessing`.
+- **Photographic atmosphere**: a CC0 equirectangular sky panorama feeds a custom cloud/detail shader; PBR normal and roughness maps add scale to the ground.
+- **Generative detail**: GPU-instanced grass with wind, instanced stones, smoke, embers, snow, stars, fireflies and cave dust.
+- **Light**: a warm-cold lighting rig, flickering fire, long directional shadows and a dedicated cave ambience.
+- **No image or audio assets for the narrative**: the cave handprints, footprints and bone surface detail are generated in Canvas; the soundscape is synthesised with Web Audio.
 - `prefers-reduced-motion` and touch/small-screen layouts are supported.
 
 ## Run it
@@ -62,15 +63,19 @@ Then open the local URL printed by Vite.
 npm run build
 ```
 
-The result is a self-contained `dist/index.html` — fonts, styles and JavaScript inlined. It can be opened directly from disk or dropped on any static host.
+The result is a self-contained `dist/index.html` — fonts, shaders, the skull model, sky and PBR maps all inlined. It can be opened directly from disk or dropped on any static host.
 
 ## Science note
 
-This is a poetic reconstruction, not a peer-reviewed diagram. Dates and cranial capacities are rounded and debated. “Earliest known” is doing a lot of work in the copy. The skeleton is deliberately stylised: it is an image of a hypothesis, not a forensic portrait.
+This is a poetic reconstruction, not a peer-reviewed diagram. Dates and cranial capacities are rounded and debated. "Earliest known" is doing a lot of work in the copy. The detailed skull is a modern-human reference, re-proportioned for each species; it is an image of a hypothesis, not a forensic portrait.
 
-## Stack
+## Assets & credits
 
-Three.js · Vite · Lenis · Web Audio · hand-written GLSL · Canvas 2D
+- **Skull**: “Skull” from the Khronos glTF Sample Assets, CC0, by Vladimir Petkovic. Decimated and re-materialled for this project.
+- **Sky**: “Kloppenheim 06 Pure Sky” from Poly Haven, CC0.
+- **Ground maps**: “Red Mud Stones” normal/roughness maps from Poly Haven, CC0.
+- **Post-processing**: [postprocessing](https://github.com/pmndrs/postprocessing) by pmndrs.
+- **Framework**: [Three.js](https://threejs.org), [Vite](https://vite.dev), [Lenis](https://github.com/darkroomengineering/lenis).
 
 ## License
 

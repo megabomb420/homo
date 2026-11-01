@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { createGlowTexture, createStoneBumpTexture } from "./textures.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import skullUrl from "./assets/skull.glb?url";
 
 const TAU = Math.PI * 2;
 
@@ -119,6 +121,14 @@ export class Hominid {
       roughness: 0.52,
       metalness: 0.02,
     });
+    this.skullMaterial = new THREE.MeshPhysicalMaterial({
+      color: "#b89d78",
+      roughness: 0.52,
+      metalness: 0.0,
+      clearcoat: 0.08,
+      clearcoatRoughness: 0.62,
+      envMapIntensity: 0.6,
+    });
     this.socketMaterial = new THREE.MeshStandardMaterial({
       color: "#0a0705",
       roughness: 0.92,
@@ -161,6 +171,10 @@ export class Hominid {
     this.stageIndex = 0;
 
     this.build();
+    this.skullReady = this.loadSkull().catch((error) => {
+      console.error("HOMO skull load failed", error);
+      this.skullError = error;
+    });
   }
 
   defaultFigure() {
@@ -571,13 +585,23 @@ export class Hominid {
   buildNeckAndSkull() {
     this.neckGroup = new THREE.Group();
     this.chestGroup.add(this.neckGroup);
+    this.neckCore = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.72, 0.95, 1, 10, 3),
+      new THREE.MeshStandardMaterial({
+        color: "#7d6a50",
+        roughness: 0.82,
+        metalness: 0,
+      }),
+    );
+    this.neckCore.castShadow = true;
+    this.neckGroup.add(this.neckCore);
     this.neckVertebrae = [];
     for (let i = 0; i < 5; i += 1) {
       const vertebra = this.ellipsoid(
         this.neckGroup,
         this.boneMaterial,
         [0, i * 0.02, -0.004],
-        [0.027, 0.008, 0.024],
+        [0.029, 0.011, 0.026],
         this.lowSphereGeo,
       );
       const process = new THREE.Mesh(
@@ -704,6 +728,27 @@ export class Hominid {
     this.head.add(this.faceMark);
   }
 
+  async loadSkull() {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(skullUrl);
+    const model = gltf.scene;
+    model.traverse((child) => {
+      if (!child.isMesh) return;
+      child.material = this.skullMaterial;
+      child.castShadow = true;
+      child.receiveShadow = false;
+      child.frustumCulled = false;
+    });
+    this.skullGroup = new THREE.Group();
+    this.skullGroup.name = "specimen-skull";
+    this.skullGroup.add(model);
+    this.head.add(this.skullGroup);
+    // The primitive skull is now only a fallback for slow/failed loads.
+    for (const child of this.head.children) {
+      if (child !== this.skullGroup) child.visible = false;
+    }
+    this.skullModel = model;
+  }
   buildFurMantle() {
     this.furGroup = new THREE.Group();
     this.torsoPivot.add(this.furGroup);
@@ -912,11 +957,14 @@ export class Hominid {
     const neckLen = h * 0.05 * cur.neck;
     this.neckGroup.position.y = torsoLen * 0.15;
     this.neckGroup.scale.setScalar(h);
+    this.neckCore.position.y = (neckLen / h) * 0.5;
+    this.neckCore.scale.set(h * 0.021, neckLen / h, h * 0.021);
     this.neckVertebrae.forEach((vertebra, index) => {
       const level = Math.floor(index / 2);
       const isProcess = index % 2 === 1;
-      vertebra.position.y = (level / 4) * (neckLen / h);
-      if (isProcess) vertebra.position.z = -0.026;
+      vertebra.position.y = (level / 4) * (neckLen / h) * 0.82;
+      vertebra.position.z = -h * 0.035;
+      if (isProcess) vertebra.position.z = -h * 0.06;
     });
     this.head.position.y = neckLen / h;
     this.head.rotation.x = cur.headX + headIdleX;
@@ -926,6 +974,17 @@ export class Hominid {
 
     const headScale = cur.head;
     const craniumScale = cur.cranium;
+
+    if (this.skullGroup) {
+      this.skullGroup.scale.set(
+        0.42 * headScale * (0.85 + craniumScale * 0.15),
+        0.47 * headScale,
+        0.33 * headScale * (0.88 + cur.jaw * 0.12),
+      );
+      this.skullGroup.position.set(0, -0.008, 0.026 + (cur.jaw - 1) * 0.006);
+      this.skullMaterial.color.copy(this.currentColor).multiplyScalar(0.92);
+      this.skullMaterial.roughness = 0.5 + (1 - craniumScale) * 0.08;
+    }
     this.cranium.scale.set(
       0.046 * headScale * (0.88 + craniumScale * 0.12),
       0.06 * headScale * (0.9 + craniumScale * 0.1),
@@ -941,11 +1000,10 @@ export class Hominid {
     this.browR.position.z = 0.053;
     this.cheekL.scale.set(0.017 * headScale, 0.013 * headScale, 0.011 * headScale);
     this.cheekR.scale.copy(this.cheekL.scale);
-    this.mandible.position.y = 0.002 - (cur.jaw - 1) * 0.005;
-    this.mandible.position.z = 0.002 + (cur.jaw - 1) * 0.004;
-    this.mandible.scale.set(headScale, headScale * (0.9 + cur.jaw * 0.1), headScale);
-    this.chin.position.z = 0.052;
-    this.chin.scale.set(0.015 * headScale, 0.012 * headScale, 0.009 * headScale);
+    this.mandible.position.set(0, 0.012, 0.058 + (cur.jaw - 1) * 0.005);
+    this.mandible.scale.set(headScale * 1.15, headScale * (0.9 + cur.jaw * 0.1), headScale);
+    this.chin.position.set(0, 0.006, 0.082);
+    this.chin.scale.set(0.017 * headScale, 0.013 * headScale, 0.011 * headScale);
     this.nasalBridge.scale.set(0.0065 * headScale, 0.017 * headScale, 0.008 * headScale);
     this.nasalAperture.scale.set(0.009 * headScale, 0.014 * headScale, 0.005 * headScale);
     this.nasalAperture.position.z = 0.064;
@@ -980,7 +1038,7 @@ export class Hominid {
 
     this.chopperGroup.visible = props.chopper > 0.04;
     this.chopperGroup.scale.setScalar(Math.max(0.001, props.chopper));
-    this.ochreGroup.visible = props.paint > 0.1;
+    this.ochreGroup.visible = false;
     this.ochreGroup.scale.setScalar(Math.max(0.001, props.paint));
 
     this.contactShadow.scale.set(h * 0.42, h * 0.26, 1);
