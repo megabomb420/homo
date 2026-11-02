@@ -30,4 +30,5 @@ Normal and roughness maps from “Red Mud Stones” by [Poly Haven](https://poly
 - [postprocessing](https://github.com/pmndrs/postprocessing) — Zlib
 - [Lenis](https://github.com/darkroomengineering/lenis) — MIT
 - [Vite](https://vite.dev) — MIT
+- [GSAP](https://gsap.com) — GreenSock Standard “No Charge” License
 - Fonts via Fontsource: Instrument Serif, Manrope, IBM Plex Mono (SIL Open Font License)

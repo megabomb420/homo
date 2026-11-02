@@ -42,6 +42,7 @@ The landscape changes with it: a Pliocene dusk, a Pleistocene campfire, an ice-a
 - **Anatomical specimen**: a full human skeleton from BodyParts3D / Z-Anatomy, split into a joint hierarchy in Blender, reduced from ~499k to ~127k triangles, and driven through seven scales and postures.
 - **Idle performance**: head glances with a counter-rotating neck, breathing chest, shoulder sway, elbow drift and small wrist movements — and on desktop it follows the pointer. Never a frozen statue.
 - **Cinematic camera**: scroll-driven dolly moves, shallow depth of field focused on the specimen, and a slower pull-back for the final chapter.
+- **GSAP typography**: masked title lines, meta, copy, quote and stats are sequenced with GSAP timelines on each chapter change. ScrollTrigger is deliberately not used — Lenis and the stage controller already own the scroll.
 - **Film pipeline**: AgX tone mapping, bloom, depth of field, chromatic aberration, SMAA, vignette and animated grain via `postprocessing`.
 - **Photographic atmosphere**: a CC0 equirectangular sky panorama feeds a custom cloud/detail shader; PBR normal and roughness maps add scale to the ground.
 - **Generative detail**: GPU-instanced grass with wind, instanced stones, smoke, embers, snow, stars, fireflies and cave dust.

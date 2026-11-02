@@ -652,6 +652,11 @@ body.is-loaded .hud {
   opacity: 1;
 }
 
+.chapter-panel.is-gsap .reveal,
+.chapter-panel.is-gsap .title-line-inner {
+  transition: none;
+}
+
 .chapter-panel.is-leaving {
   opacity: 0;
   transition: opacity 0.38s ease;

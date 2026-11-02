@@ -2,6 +2,7 @@ import "./style.css";
 
 import * as THREE from "three";
 import Lenis from "lenis";
+import { gsap } from "gsap";
 import {
   BloomEffect,
   BlendFunction,
@@ -86,6 +87,8 @@ let scrollProgress = 0;
 let stageFloat = 0;
 let activeStage = -1;
 let lastSoundStage = -1;
+let panelTimeline = null;
+let panelMotionReady = false;
 
 let isReady = false;
 let isLoading = true;
@@ -186,6 +189,58 @@ function buildInterface() {
   ticksEl.innerHTML = STAGES.map(() => "<span></span>").join("");
 }
 
+function animatePanelIn(index) {
+  const panel = panelsEl.querySelector(`.chapter-panel[data-stage="${index}"]`);
+  if (!panel) return;
+  panel.classList.add("is-gsap");
+
+  const meta = panel.querySelector(".panel-meta");
+  const taxon = panel.querySelector(".chapter-taxon");
+  const lines = panel.querySelectorAll(".title-line-inner");
+  const copy = panel.querySelector(".chapter-copy");
+  const quote = panel.querySelector(".chapter-quote");
+  const stats = panel.querySelectorAll(".chapter-stats .stat");
+  const restart = panel.querySelector(".restart-button");
+
+  panelTimeline?.kill();
+
+  if (reducedMotion) {
+    gsap.set([meta, taxon, copy, quote, restart].filter(Boolean), {
+      autoAlpha: 1,
+      y: 0,
+      rotate: 0,
+    });
+    gsap.set(lines, { yPercent: 0, rotate: 0 });
+    gsap.set(stats, { autoAlpha: 1, y: 0 });
+    return;
+  }
+
+  panelTimeline = gsap.timeline({ defaults: { ease: "power3.out" } });
+  panelTimeline
+    .fromTo(meta, { y: 10, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.55 }, 0)
+    .fromTo(taxon, { y: 12, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.6 }, 0.08)
+    .fromTo(
+      lines,
+      { yPercent: 112, rotate: 1.4 },
+      { yPercent: 0, rotate: 0, duration: 1.05, stagger: 0.07 },
+      0.1,
+    )
+    .fromTo(copy, { y: 14, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.8 }, 0.42)
+    .fromTo(quote, { y: 12, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.7 }, 0.56)
+    .fromTo(
+      stats,
+      { y: 10, autoAlpha: 0 },
+      { y: 0, autoAlpha: 1, duration: 0.6, stagger: 0.055 },
+      0.64,
+    )
+    .fromTo(
+      restart || [],
+      { y: 10, autoAlpha: 0 },
+      { y: 0, autoAlpha: 1, duration: 0.55 },
+      0.8,
+    );
+}
+
 function setActiveStage(index) {
   if (index === activeStage) return;
   const previous = activeStage;
@@ -225,6 +280,8 @@ function setActiveStage(index) {
     // The opening title should arrive just after the loader, not before it.
     scrollHint.classList.remove("is-hidden");
   }
+
+  if (panelMotionReady) animatePanelIn(index);
 }
 
 function updateScrollUI() {
@@ -654,6 +711,7 @@ function finishLoading() {
   introStart = timer.getElapsed();
   activeStage = -1;
   setActiveStage(0);
+  panelMotionReady = true;
   lastFrame = timer.getElapsed();
   setTimeout(() => loaderEl?.setAttribute("aria-hidden", "true"), 1300);
 }
